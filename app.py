@@ -74,7 +74,7 @@ def process_with_together(prompt):
         return f"Error: {response.status_code}, {response.text}"
 
 # Page configuration
-st.set_page_config(page_title="Precios Canasta Básica Guatemala", page_icon="🛒")
+st.set_page_config(page_title="Precios de Productos en Guatemala", page_icon="🛒")
 
 # Login/Logout UI
 if not st.session_state.logged_in:
@@ -88,7 +88,7 @@ if not st.session_state.logged_in:
             st.error("Usuario o contraseña incorrectos")
 else:
     # Main application UI (only shown when logged in)
-    st.title("Precios de la Canasta Básica en Guatemala")
+    st.title("Comparación de Precios de Productos en Guatemala")
     
     st.sidebar.button("Cerrar Sesión", on_click=logout)
 
@@ -106,37 +106,43 @@ else:
     # Main content
     st.write(f"Fecha de consulta: {datetime.now().strftime('%d/%m/%Y')}")
 
-    if st.button("Obtener Información de Precios"):
-        with st.spinner("Buscando información actualizada..."):
-            # Use Serper to search for recent information
-            search_results = search_serper("precios canasta básica Guatemala " + datetime.now().strftime("%B %Y"))
-            
-            # Process the search results with Together API
-            prompt = f"""
-            Analiza la siguiente información sobre los precios de la canasta básica en Guatemala:
+    producto = st.text_input("Ingrese el nombre del producto a consultar:")
 
-            {json.dumps(search_results, indent=2)}
+    if st.button("Buscar Precios"):
+        if producto:
+            with st.spinner(f"Buscando precios de {producto} en diferentes mercados de Guatemala..."):
+                # Use Serper to search for recent information
+                search_results = search_serper(f"precio {producto} mercados Guatemala " + datetime.now().strftime("%B %Y"))
+                
+                # Process the search results with Together API
+                prompt = f"""
+                Analiza la siguiente información sobre los precios de {producto} en diferentes mercados de Guatemala:
 
-            Proporciona un resumen conciso de los precios actuales de los productos de la canasta básica en Guatemala.
-            Incluye los siguientes puntos:
-            1. La fecha más reciente mencionada para los precios.
-            2. El costo total de la canasta básica si se menciona.
-            3. Los precios de al menos 5 productos específicos si se mencionan.
-            4. Cualquier tendencia o cambio significativo en los precios.
+                {json.dumps(search_results, indent=2)}
 
-            Presenta la información de manera clara y fácil de leer.
-            """
-            
-            analysis = process_with_together(prompt)
-            st.subheader("Resumen de Precios de la Canasta Básica")
-            st.write(analysis)
+                Proporciona un resumen en forma de tabla con las siguientes columnas:
+                1. Mercado
+                2. Precio (en Quetzales)
+                3. Fecha del precio (si está disponible)
+
+                Asegúrate de incluir el precio más bajo y el más alto encontrados.
+                Al final de la tabla, proporciona una lista de las fuentes utilizadas para esta información.
+
+                Presenta la información en formato Markdown para que pueda ser fácilmente mostrada en Streamlit.
+                """
+                
+                analysis = process_with_together(prompt)
+                st.markdown(analysis)
+        else:
+            st.warning("Por favor, ingrese el nombre de un producto.")
 
     # Instructions
     st.sidebar.header("Instrucciones")
     st.sidebar.write("""
-    1. Haga clic en el botón "Obtener Información de Precios" para buscar los datos más recientes.
-    2. La aplicación buscará y analizará la información más actualizada sobre los precios de la canasta básica en Guatemala.
-    3. Se mostrará un resumen con los datos más relevantes.
+    1. Ingrese el nombre del producto que desea consultar.
+    2. Haga clic en el botón "Buscar Precios" para obtener la información.
+    3. Se mostrará una tabla con los precios en diferentes mercados.
+    4. Al final de la tabla encontrará las fuentes de la información.
     """)
 
     # Note about the APIs
